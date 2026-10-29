@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paperless Pal | Document Assistant</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f6fc;
+            color: #172033;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            padding: 25px 8%;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+        }
+
+        header p {
+            margin: 0;
+            color: #dbeafe;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 18px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            margin-bottom: 22px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px #1725540c;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .search-form input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        button,
+        .button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 17px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        button:hover,
+        .button:hover {
+            background: #1d4ed8;
+        }
+
+        .upload-form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .document {
+            padding: 16px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .document:last-child {
+            border-bottom: none;
+        }
+
+        .muted {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .result {
+            padding: 16px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result:last-child {
+            border-bottom: none;
+        }
+
+        .match {
+            background: #eff6ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .message {
+            background: #dcfce7;
+            color: #166534;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .secondary {
+            background: #475569;
+        }
+
+        @media (max-width: 600px) {
+            .search-form {
+                flex-direction: column;
+            }
+
+            header {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>📚 Paperless Pal</h1>
+    <p>Your smart document assistant</p>
+</header>
+
+<main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="message {% if category == 'error' %}error{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- SEARCH BOX -->
+    <section class="card">
+        <h2>🔎 Ask your documents</h2>
+        <p>Search for a subject, topic, date, or keyword in your uploaded files.</p>
+
+        <form action="{{ url_for('search') }}" method="GET"
+              class="search-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ query }}"
+                placeholder="Example: Show me only the English syllabus"
+                maxlength="200"
+                required
+            >
+            <button type="submit">Search</button>
+        </form>
+
+        {% if searched %}
+            <h3>Results for: "{{ query }}"</h3>
+
+            {% if results %}
+                <p class="muted">
+                    Found matching passages in {{ results|length }}
+                    document(s).
+                </p>
+
+                {% for result in results %}
+                    <div class="result">
+                        <h3>📄 {{ result.name }}</h3>
+
+                        <div class="actions">
+                            <a class="button"
+                               href="{{ url_for('detail', doc_id=result.id) }}">
+                                Open document
+                            </a>
+                        </div>
+
+                        {% for match in result.matches %}
+                            <div class="match">{{ match.text }}</div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+            {% else %}
+                <p>No matching text was found. Try a different keyword,
+                   such as "English", "grammar", or "examination".</p>
+            {% endif %}
+        {% endif %}
+    </section>
+
+    <!-- UPLOAD DOCUMENT -->
+    <section class="card">
+        <h2>📤 Upload a document</h2>
+        <p class="muted">Supported formats: PDF and TXT. Maximum size: 10 MB.</p>
+
+        <form action="{{ url_for('upload') }}"
+              method="POST"
+              enctype="multipart/form-data"
+              class="upload-form">
+
+            <input
+                type="file"
+                name="document"
+                accept=".pdf,.txt"
+                required
+            >
+
+            <button type="submit">Upload and Analyze</button>
+        </form>
+    </section>
+
+    <!-- ALL DOCUMENTS -->
+    <section class="card">
+        <h2>📁 My Documents</h2>
+
+        {% if documents %}
+            {% for doc in documents %}
+                <div class="document">
+                    <h3>{{ doc.original_name }}</h3>
+
+                    <p class="muted">
+                        Uploaded: {{ doc.uploaded_at }}
+                    </p>
+
+                    <p>{{ doc.summary }}</p>
+
+                    <div class="actions">
+                        <a class="button"
+                           href="{{ url_for('detail', doc_id=doc.id) }}">
+                            View
+                        </a>
+
+                        <a class="button secondary"
+                           href="{{ url_for('download', doc_id=doc.id) }}">
+                            Download
+                        </a>
+
+                        <form
+                            action="{{ url_for('delete', doc_id=doc.id) }}"
+                            method="POST"
+                            onsubmit="return confirm('Delete this document?');">
+
+                            <button type="submit"
+                                    style="background:#dc2626;">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No documents uploaded yet. Upload your first PDF or TXT file!</p>
+        {% endif %}
+    </section>
+
+</main>
+
+</body>
+</html>

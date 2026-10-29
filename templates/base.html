@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Paperless Pal 2.0{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<nav><a class="brand" href="{{ url_for('home') }}"><span class="logo">P</span> Paperless Pal <small>2.0</small></a><span class="navtag">SMART DOCUMENT ASSISTANT</span></nav>
+<main class="wrap">
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+{% block content %}{% endblock %}
+</main>
+<footer>Paperless Pal 2.0 · One-day hackathon MVP · Local demo</footer>
+</body></html>
